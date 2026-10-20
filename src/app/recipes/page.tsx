@@ -34,11 +34,16 @@ export default async function RecipesPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Recetario 📖</h1>
-        <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-          {recipes.length} recetas · Buscá por nombre o ingrediente.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Recetario 📖</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+            {recipes.length} recetas · Buscá por nombre o ingrediente.
+          </p>
+        </div>
+        <Link href="/recipes/new" className="btn-primary shrink-0">
+          ➕ Nueva
+        </Link>
       </div>
 
       {/* Search */}

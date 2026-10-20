@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getRecipeById, scaleIngredients } from "@/lib/recipes";
+import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 
 export const instant = false;
 
@@ -37,7 +38,15 @@ export default async function RecipeDetailPage({
         <div className="flex items-start gap-4">
           <span className="text-5xl">{recipe.image_emoji || "🍽"}</span>
           <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold">{recipe.name}</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl md:text-3xl font-bold">{recipe.name}</h1>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link href={`/recipes/${recipe.id}/edit`} className="btn-secondary text-xs py-1.5" title="Editar">
+                  ✏️ Editar
+                </Link>
+                <DeleteRecipeButton recipeId={recipe.id} recipeName={recipe.name} />
+              </div>
+            </div>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className={`badge ${PREP_BADGE[recipe.prep_level]}`}>
                 {recipe.prep_level}
