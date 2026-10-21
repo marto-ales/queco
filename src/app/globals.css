@@ -187,3 +187,36 @@ body {
 .badge-pescado {
   @apply bg-sky-100/80 text-sky-700 ring-1 ring-sky-200/60 dark:bg-sky-950/70 dark:text-sky-400 dark:ring-sky-500/20;
 }
+
+/* ---------- Print ---------- */
+
+@media print {
+  aside,
+  nav.fixed,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .card {
+    background: #fff !important;
+    border: 1px solid #e4e4e7 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .page-enter > * {
+    animation: none !important;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}

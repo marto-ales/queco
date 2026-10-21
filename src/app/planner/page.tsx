@@ -73,7 +73,7 @@ export default async function PlannerPage({
 
       {/* Quick links */}
       <div className="flex flex-wrap gap-3">
-        <Link href="/shopping" className="btn-secondary">
+        <Link href={`/shopping?week=${weekStart}`} className="btn-secondary">
           🛒 Lista de compras
         </Link>
         <Link href="/prep" className="btn-secondary">
