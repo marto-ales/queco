@@ -76,7 +76,7 @@ export default async function PlannerPage({
         <Link href={`/shopping?week=${weekStart}`} className="btn-secondary">
           🛒 Lista de compras
         </Link>
-        <Link href="/prep" className="btn-secondary">
+        <Link href={`/prep?week=${weekStart}`} className="btn-secondary">
           ⚡ Meal prep
         </Link>
       </div>

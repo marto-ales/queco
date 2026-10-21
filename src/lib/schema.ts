@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS prep_tasks (
   level INTEGER NOT NULL CHECK(level IN (1,2,3)),
   task_description TEXT NOT NULL,
   time_minutes INTEGER NOT NULL DEFAULT 0,
-  sort_order INTEGER NOT NULL DEFAULT 0
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  completed INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe ON recipe_ingredients(recipe_id);

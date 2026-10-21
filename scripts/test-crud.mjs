@@ -20,7 +20,12 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   const consoleErrors = [];
-  page.on("pageerror", (e) => consoleErrors.push(String(e)));
+  // React dev-mode user-timing instrumentation occasionally throws a negative
+  // timestamp error during rapid client navigation; not an app error.
+  const IGNORE = /negative time stamp/;
+  page.on("pageerror", (e) => {
+    if (!IGNORE.test(String(e))) consoleErrors.push(String(e));
+  });
 
   async function typeClear(selector, text) {
     await page.focus(selector);

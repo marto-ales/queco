@@ -71,6 +71,20 @@ export function getRecipeCount(): number {
   return row.c;
 }
 
+export function getRecipesByCategories(categories: RecipeCategory[]): RecipeListItem[] {
+  const db = getDb();
+  if (categories.length === 0) return [];
+  const placeholders = categories.map(() => "?").join(",");
+  return db
+    .prepare(`
+      SELECT r.*, (SELECT COUNT(*) FROM recipe_ingredients ri WHERE ri.recipe_id = r.id) as ingredient_count
+      FROM recipes r
+      WHERE r.category IN (${placeholders})
+      ORDER BY r.time_minutes ASC, r.name ASC
+    `)
+    .all(...categories) as RecipeListItem[];
+}
+
 export function getSuggestedRecipes(count: number, excludeIds: number[] = []): RecipeListItem[] {
   const db = getDb();
   const placeholders = excludeIds.map(() => "?").join(",");

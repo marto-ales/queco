@@ -114,4 +114,10 @@ export type PrepTask = {
   task_description: string;
   time_minutes: number;
   sort_order: number;
+  completed: number;
+};
+
+export type PrepTaskFull = PrepTask & {
+  recipe_name: string;
+  recipe_emoji: string | null;
 };

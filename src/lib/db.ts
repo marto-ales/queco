@@ -16,6 +16,12 @@ export function getDb(): Database.Database {
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
 
+  // Migration: prep_tasks.completed added in Phase 5
+  const prepCols = db.prepare("PRAGMA table_info(prep_tasks)").all() as { name: string }[];
+  if (!prepCols.some((c) => c.name === "completed")) {
+    db.exec("ALTER TABLE prep_tasks ADD COLUMN completed INTEGER NOT NULL DEFAULT 0");
+  }
+
   global.__quecoDb = db;
   return db;
 }

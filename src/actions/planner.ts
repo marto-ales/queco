@@ -129,6 +129,7 @@ export async function clearWeek(weekStart: string) {
   if (plan) {
     db.prepare("DELETE FROM planned_meals WHERE week_plan_id = ?").run(plan.id);
     db.prepare("DELETE FROM shopping_items WHERE week_plan_id = ?").run(plan.id);
+    db.prepare("DELETE FROM prep_tasks WHERE week_plan_id = ?").run(plan.id);
   }
   refresh(weekStart);
   return { ok: true };
