@@ -1,0 +1,21 @@
+import puppeteer from "puppeteer-core";
+const browser = await puppeteer.launch({ executablePath: "/usr/bin/google-chrome", headless: "new", args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+const page = await browser.newPage();
+page.on("pageerror", (e) => console.log("PAGEERROR", String(e)));
+page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE-ERR", m.text().slice(0,200)); });
+page.on("request", (r) => { if (r.method() === "POST") console.log("POST", r.url().slice(0,100)); });
+await page.goto("http://localhost:3456/planner", { waitUntil: "domcontentloaded" });
+await page.waitForFunction(() => document.body.innerText.includes("/14 comidas"), { timeout: 20000 });
+const hasVaciar = await page.$$eval("button", (b) => b.some((x) => x.textContent.includes("Vaciar")));
+if (hasVaciar) { await page.$$eval("button", (b) => b.find((x) => x.textContent.includes("Vaciar")).click()); await page.waitForFunction(() => document.body.innerText.includes("0/14")); }
+await page.$$eval("button", (b) => b.find((x) => x.textContent.trim() === "+ Almuerzo").click());
+await page.waitForSelector('div[role="dialog"] input[placeholder="Buscar receta..."]', { visible: true });
+await page.$$eval('div[role="dialog"] button', (btns) => btns.find((b) => b.querySelector("span.text-2xl")).click());
+await page.waitForFunction(() => document.body.innerText.includes("1/14"));
+await new Promise((r) => setTimeout(r, 1500));
+console.log("quitar count:", await page.$$eval("button", (b) => b.filter((x) => x.title === "Quitar").length));
+console.log("quitar disabled:", await page.$$eval("button", (b) => b.filter((x) => x.title === "Quitar").map((x) => x.disabled)));
+await page.$$eval("button", (b) => b.find((x) => x.title === "Quitar").click());
+await new Promise((r) => setTimeout(r, 3000));
+console.log("counter:", (await page.evaluate(() => document.body.innerText)).match(/\d+\/14 comidas/)?.[0]);
+await browser.close();
