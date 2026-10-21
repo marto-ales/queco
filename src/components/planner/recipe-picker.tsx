@@ -36,24 +36,24 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-end md:items-center justify-center"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="bg-white dark:bg-zinc-900 rounded-t-2xl md:rounded-2xl w-full md:max-w-lg max-h-[85vh] flex flex-col shadow-2xl"
+        className="w-full md:max-w-lg max-h-[85vh] flex flex-col rounded-t-3xl md:rounded-3xl border border-white/60 bg-white/85 backdrop-blur-2xl shadow-2xl dark:border-white/10 dark:bg-zinc-900/85 animate-[pop-in_.25s_cubic-bezier(.22,.68,.32,1)_both]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-700">
+        <div className="p-4 border-b border-white/60 dark:border-white/10">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold">
               {dayLabel} · {mealType === "almuerzo" ? "🍽 Almuerzo" : "🌙 Cena"}
             </h3>
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-700"
+              className="w-8 h-8 rounded-full bg-zinc-100/80 dark:bg-white/10 flex items-center justify-center text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/80 dark:hover:bg-white/20 transition-colors"
               aria-label="Cerrar"
             >
               ✕
@@ -88,7 +88,7 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
                 key={r.id}
                 onClick={() => onPick(r.id)}
                 disabled={pending}
-                className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left transition-colors disabled:opacity-50"
+                className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-white/80 dark:hover:bg-white/5 text-left transition-colors disabled:opacity-50"
               >
                 <span className="text-2xl">{r.image_emoji || "🍽"}</span>
                 <div className="flex-1 min-w-0">

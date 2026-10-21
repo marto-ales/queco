@@ -138,7 +138,7 @@ export function WeekGrid({ weekStart, meals, recipes }: Props) {
               return meal ? (
                 <div
                   key={mealType}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 p-2.5"
+                  className="rounded-2xl border border-white/70 bg-white/80 backdrop-blur p-2.5 shadow-[0_1px_2px_rgb(16_24_40/0.04)] dark:border-white/10 dark:bg-white/5"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <button
@@ -168,7 +168,7 @@ export function WeekGrid({ weekStart, meals, recipes }: Props) {
                     <button
                       onClick={() => handleServings(meal.id, -1, meal.servings)}
                       disabled={isPending || meal.servings <= 1}
-                      className="w-5 h-5 rounded bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs disabled:opacity-30"
+                      className="w-6 h-6 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center text-xs transition-colors hover:bg-zinc-200 disabled:opacity-30 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/20"
                     >
                       −
                     </button>
@@ -176,7 +176,7 @@ export function WeekGrid({ weekStart, meals, recipes }: Props) {
                     <button
                       onClick={() => handleServings(meal.id, 1, meal.servings)}
                       disabled={isPending || meal.servings >= 20}
-                      className="w-5 h-5 rounded bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs disabled:opacity-30"
+                      className="w-6 h-6 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center text-xs transition-colors hover:bg-zinc-200 disabled:opacity-30 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/20"
                     >
                       +
                     </button>
@@ -187,7 +187,7 @@ export function WeekGrid({ weekStart, meals, recipes }: Props) {
                   key={mealType}
                   onClick={() => setPicker({ day, mealType })}
                   disabled={isPending}
-                  className="rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-700 p-2.5 text-sm text-zinc-400 hover:border-emerald-400 hover:text-emerald-600 transition-colors disabled:opacity-50 min-h-[58px]"
+                  className="rounded-2xl border-2 border-dashed border-zinc-300/70 bg-white/30 p-2.5 text-sm text-zinc-400 backdrop-blur-sm transition-all duration-200 hover:-translate-y-px hover:border-emerald-400 hover:bg-emerald-50/60 hover:text-emerald-600 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-emerald-500/50 dark:hover:bg-emerald-500/10 disabled:opacity-50 min-h-[58px]"
                 >
                   + {mealType === "almuerzo" ? "Almuerzo" : "Cena"}
                 </button>

@@ -102,7 +102,7 @@ export default async function RecipesPage({
             <Link
               key={recipe.id}
               href={`/recipes/${recipe.id}`}
-              className="card p-4 hover:shadow-md transition-shadow flex items-start gap-3"
+              className="card card-hover p-4 flex items-start gap-3"
             >
               <span className="text-3xl mt-0.5">{recipe.image_emoji || "🍽"}</span>
               <div className="flex-1 min-w-0">
