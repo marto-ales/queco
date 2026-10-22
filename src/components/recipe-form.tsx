@@ -36,9 +36,19 @@ type Props = {
   recipe?: RecipeWithDetails;
   allIngredients: Ingredient[];
   onSubmit: (formData: FormData) => Promise<{ error?: string } | void>;
+  /** When true, the form pre-fills from `recipe` but creates a new recipe. */
+  isDuplicate?: boolean;
+  /** Preselected category for new recipes. */
+  defaultCategory?: RecipeCategory;
 };
 
-export function RecipeForm({ recipe, allIngredients, onSubmit }: Props) {
+export function RecipeForm({
+  recipe,
+  allIngredients,
+  onSubmit,
+  isDuplicate = false,
+  defaultCategory = "almuerzo",
+}: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -139,7 +149,7 @@ export function RecipeForm({ recipe, allIngredients, onSubmit }: Props) {
         <div className="grid md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">Categoría</label>
-            <select name="category" defaultValue={recipe?.category || "almuerzo"} className="input">
+            <select name="category" defaultValue={recipe?.category || defaultCategory} className="input">
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
@@ -343,9 +353,18 @@ export function RecipeForm({ recipe, allIngredients, onSubmit }: Props) {
       {/* Submit */}
       <div className="flex gap-3">
         <button type="submit" disabled={isPending} className="btn-primary flex-1 md:flex-none disabled:opacity-50">
-          {isPending ? "Guardando..." : recipe ? "💾 Guardar cambios" : "➕ Crear receta"}
+          {isPending
+            ? "Guardando..."
+            : isDuplicate
+              ? "➕ Crear variante"
+              : recipe
+                ? "💾 Guardar cambios"
+                : "➕ Crear receta"}
         </button>
-        <a href={recipe ? `/recipes/${recipe.id}` : "/recipes"} className="btn-secondary">
+        <a
+          href={recipe && !isDuplicate ? `/recipes/${recipe.id}` : "/recipes"}
+          className="btn-secondary"
+        >
           Cancelar
         </a>
       </div>

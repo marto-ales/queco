@@ -1,11 +1,22 @@
 import { getDb } from "@/lib/db";
 import { RecipeForm } from "@/components/recipe-form";
 import { createRecipe } from "@/actions/recipes";
-import type { Ingredient } from "@/lib/types";
+import type { Ingredient, RecipeCategory } from "@/lib/types";
 
 export const instant = false;
 
-export default function NewRecipePage() {
+const CATEGORIES: RecipeCategory[] = ["almuerzo", "cena", "desayuno", "snack", "postre"];
+
+export default async function NewRecipePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const sp = await searchParams;
+  const defaultCategory = CATEGORIES.includes(sp.from as RecipeCategory)
+    ? (sp.from as RecipeCategory)
+    : "almuerzo";
+
   const db = getDb();
   const allIngredients = db
     .prepare("SELECT id, name, unit, section_id FROM ingredients ORDER BY name")
@@ -20,7 +31,11 @@ export default function NewRecipePage() {
         </p>
       </div>
 
-      <RecipeForm allIngredients={allIngredients} onSubmit={createRecipe} />
+      <RecipeForm
+        allIngredients={allIngredients}
+        onSubmit={createRecipe}
+        defaultCategory={defaultCategory}
+      />
     </div>
   );
 }

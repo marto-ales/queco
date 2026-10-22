@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { RecipeListItem } from "@/lib/types";
 
 const PREP_BADGE: Record<string, string> = {
@@ -21,6 +22,58 @@ type Props = {
 export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pending }: Props) {
   const [search, setSearch] = useState("");
   const [onlySuggested, setOnlySuggested] = useState(true);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // Keep the sheet within the visible area on mobile when the keyboard opens.
+  // `dvh` covers most browsers; visualViewport covers Android Chrome precisely.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv || !sheetRef.current) return;
+    const el = sheetRef.current;
+    const onResize = () => {
+      el.style.maxHeight = `${Math.round(vv.height * 0.9)}px`;
+    };
+    onResize();
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+      el.style.maxHeight = "";
+    };
+  }, []);
+
+  // Lock background scroll while the sheet is open so the page doesn't jump.
+  // Pin the body with position:fixed to fully stop scroll on mobile (keyboard
+  // open / input focus would otherwise scroll the document to the bottom).
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -29,7 +82,6 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
       if (onlySuggested && !suggestedCategory.includes(r.category)) return false;
       if (!q) return true;
       if (r.name.toLowerCase().includes(q)) return true;
-      // match against tags
       return JSON.parse(r.tags).some((t: string) => t.includes(q));
     });
   }, [recipes, search, onlySuggested, mealType]);
@@ -42,7 +94,8 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
       aria-modal="true"
     >
       <div
-        className="w-full md:max-w-lg max-h-[85vh] flex flex-col rounded-t-3xl md:rounded-3xl border border-white/60 bg-white/85 backdrop-blur-2xl shadow-2xl dark:border-white/10 dark:bg-zinc-900/85 animate-[pop-in_.25s_cubic-bezier(.22,.68,.32,1)_both]"
+        ref={sheetRef}
+        className="w-full md:max-w-lg max-h-[85dvh] flex flex-col rounded-t-3xl md:rounded-3xl border border-white/60 bg-white/85 backdrop-blur-2xl shadow-2xl dark:border-white/10 dark:bg-zinc-900/85 animate-[pop-in_.25s_cubic-bezier(.22,.68,.32,1)_both]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -65,7 +118,8 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar receta..."
             className="input"
-            autoFocus
+            inputMode="search"
+            enterKeyHint="search"
           />
           <label className="flex items-center gap-2 mt-2.5 text-xs text-zinc-500 cursor-pointer select-none">
             <input
@@ -79,26 +133,71 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-2">
+          {/* Create / duplicate actions */}
+          <div className="flex flex-col gap-1.5 p-1 pb-2 mb-1 border-b border-white/60 dark:border-white/10">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                router.push(`/recipes/new?from=${mealType}`);
+              }}
+              className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 text-left transition-colors hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40"
+            >
+              <span className="text-xl">➕</span>
+              <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                Crear receta nueva
+              </span>
+            </button>
+          </div>
+
           {filtered.length === 0 ? (
             <p className="text-sm text-zinc-400 text-center py-8">Sin resultados</p>
           ) : (
             filtered.map((r) => (
-              <button
+              <div
                 key={r.id}
-                onClick={() => onPick(r.id)}
-                disabled={pending}
-                className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-white/80 dark:hover:bg-white/5 text-left transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 rounded-2xl hover:bg-white/80 dark:hover:bg-white/5 transition-colors"
               >
-                <span className="text-2xl">{r.image_emoji || "🍽"}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{r.name}</p>
-                  <p className="text-xs text-zinc-400">
-                    ⏱ {r.time_minutes} min · {r.servings_base} porc.
-                  </p>
-                </div>
-                <span className={`badge ${PREP_BADGE[r.prep_level]}`}>{r.prep_level}</span>
-              </button>
+                <button
+                  onClick={() => onPick(r.id)}
+                  disabled={pending}
+                  className="flex-1 flex items-center gap-3 p-2.5 text-left disabled:opacity-50 min-w-0"
+                >
+                  <span className="text-2xl">{r.image_emoji || "🍽"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{r.name}</p>
+                    <p className="text-xs text-zinc-400">
+                      ⏱ {r.time_minutes} min · {r.servings_base} porc.
+                    </p>
+                  </div>
+                  <span className={`badge ${PREP_BADGE[r.prep_level]} shrink-0`}>{r.prep_level}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push(`/recipes/${r.id}/edit`);
+                  }}
+                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-zinc-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-colors"
+                  title="Editar receta"
+                  aria-label={`Editar ${r.name}`}
+                >
+                  ✏️
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push(`/recipes/${r.id}/duplicate`);
+                  }}
+                  className="shrink-0 w-9 h-9 mr-1 rounded-full flex items-center justify-center text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
+                  title="Duplicar como variante"
+                  aria-label={`Duplicar ${r.name}`}
+                >
+                  ⧉
+                </button>
+              </div>
             ))
           )}
         </div>
