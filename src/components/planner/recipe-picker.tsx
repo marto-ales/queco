@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { RecipeListItem } from "@/lib/types";
+
+const emptySubscribe = () => () => {};
 
 const PREP_BADGE: Record<string, string> = {
   express: "badge-express",
@@ -24,14 +27,25 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
   const [onlySuggested, setOnlySuggested] = useState(true);
   const sheetRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   // Keep the sheet within the visible area on mobile when the keyboard opens.
   // `dvh` covers most browsers; visualViewport covers Android Chrome precisely.
+  // Only applies on small/touch viewports so desktop sizing stays CSS-driven.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv || !sheetRef.current) return;
     const el = sheetRef.current;
+    const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
     const onResize = () => {
+      if (!isMobile()) {
+        el.style.maxHeight = "";
+        return;
+      }
       el.style.maxHeight = `${Math.round(vv.height * 0.9)}px`;
     };
     onResize();
@@ -44,34 +58,19 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
     };
   }, []);
 
-  // Lock background scroll while the sheet is open so the page doesn't jump.
-  // Pin the body with position:fixed to fully stop scroll on mobile (keyboard
-  // open / input focus would otherwise scroll the document to the bottom).
+  // Lock background scroll while the sheet is open. Use overflow:hidden on the
+  // root elements instead of position:fixed on <body>, which would offset the
+  // fixed backdrop and push the sheet below the viewport.
   useEffect(() => {
-    const scrollY = window.scrollY;
+    const html = document.documentElement;
     const body = document.body;
-    const prev = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-    };
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
     body.style.overflow = "hidden";
     return () => {
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.left = prev.left;
-      body.style.right = prev.right;
-      body.style.width = prev.width;
-      body.style.overflow = prev.overflow;
-      window.scrollTo(0, scrollY);
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
     };
   }, []);
 
@@ -86,16 +85,18 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
     });
   }, [recipes, search, onlySuggested, mealType]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-end md:items-center justify-center"
+      className="fixed inset-0 z-[70] bg-black/30 backdrop-blur-sm flex justify-center items-end md:items-center md:p-6"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
         ref={sheetRef}
-        className="w-full md:max-w-lg max-h-[85dvh] flex flex-col rounded-t-3xl md:rounded-3xl border border-white/60 bg-white/85 backdrop-blur-2xl shadow-2xl dark:border-white/10 dark:bg-zinc-900/85 animate-[pop-in_.25s_cubic-bezier(.22,.68,.32,1)_both]"
+        className="w-full md:max-w-lg max-h-[85dvh] md:max-h-[80dvh] mb-[env(safe-area-inset-bottom)] md:mb-0 flex flex-col rounded-t-3xl md:rounded-3xl border border-white/60 bg-white/85 backdrop-blur-2xl shadow-2xl dark:border-white/10 dark:bg-zinc-900/85 animate-[pop-in_.25s_cubic-bezier(.22,.68,.32,1)_both]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -202,6 +203,7 @@ export function RecipePicker({ dayLabel, mealType, recipes, onPick, onClose, pen
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

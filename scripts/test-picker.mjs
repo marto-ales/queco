@@ -25,19 +25,66 @@ try {
   );
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
+  page.on("dialog", (d) => d.accept());
 
   // Clean slate: ensure current week exists without meals by visiting planner
   await page.goto(`${BASE}/planner`, { waitUntil: "networkidle0" });
 
-  // Open the picker from an empty slot (first "+ Almuerzo" button)
-  await page.evaluate(() => {
-    const btn = [...document.querySelectorAll("button")].find((b) =>
-      b.textContent.trim().startsWith("+ Almuerzo")
-    );
-    btn.click();
-  });
-  await page.waitForSelector('[role="dialog"]', { timeout: 10000 });
+  // Helper: open the picker from any empty slot, clearing the week if full.
+  const openPicker = async () => {
+    const opened = await page.evaluate(() => {
+      const btn = [...document.querySelectorAll("button")].find((b) =>
+        /^\+\s*(Almuerzo|Cena)/.test(b.textContent.trim())
+      );
+      if (btn) {
+        btn.click();
+        return true;
+      }
+      return false;
+    });
+    if (!opened) {
+      await page.evaluate(() => {
+        const clear = [...document.querySelectorAll("button")].find((b) =>
+          b.textContent.includes("Vaciar")
+        );
+        clear.click();
+      });
+      await page.waitForFunction(
+        () => [...document.querySelectorAll("button")].some((b) => /^\+\s*(Almuerzo|Cena)/.test(b.textContent.trim())),
+        { timeout: 10000 }
+      );
+      await page.evaluate(() => {
+        const btn = [...document.querySelectorAll("button")].find((b) =>
+          /^\+\s*(Almuerzo|Cena)/.test(b.textContent.trim())
+        );
+        btn.click();
+      });
+    }
+    await page.waitForSelector('[role="dialog"]', { timeout: 10000 });
+  };
+
+  await openPicker();
   check("Picker opens", true);
+
+  // Modal must sit above the mobile bottom nav (z-index) and not be clipped.
+  const geom = await page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]');
+    const sheet = dialog.querySelector(":scope > div");
+    const nav = document.querySelector("nav.fixed");
+    const s = sheet.getBoundingClientRect();
+    return {
+      zDialog: parseInt(getComputedStyle(dialog).zIndex, 10),
+      zNav: nav ? parseInt(getComputedStyle(nav).zIndex, 10) : -1,
+      top: s.top,
+      bottom: s.bottom,
+      height: s.height,
+      vh: window.innerHeight,
+    };
+  });
+  check("Modal z-index above bottom nav", geom.zDialog > geom.zNav, `modal ${geom.zDialog} vs nav ${geom.zNav}`);
+  check("Modal not clipped at top", geom.top >= -1, `top=${Math.round(geom.top)}`);
+  check("Modal within viewport", geom.bottom <= geom.vh + 1, `bottom=${Math.round(geom.bottom)} vh=${geom.vh}`);
+  check("Modal fills reasonable height", geom.height > geom.vh * 0.4, `h=${Math.round(geom.height)}`);
 
   // Search input present
   const hasSearch = await page.$('[role="dialog"] input[placeholder="Buscar receta..."]');
@@ -64,17 +111,19 @@ try {
   });
   check("Result list is scrollable", sheetScrollable);
 
-  // Type in search — the pinned body must keep the page from jumping.
-  const beforeTop = await page.evaluate(() => document.body.getBoundingClientRect().top);
+  // Type in search — the page must not jump while the sheet is open.
+  const beforeScroll = await page.evaluate(() => window.scrollY);
   await page.type('[role="dialog"] input[placeholder="Buscar receta..."]', "pollo");
   await new Promise((r) => setTimeout(r, 400));
-  const bodyFixed = await page.evaluate(() => getComputedStyle(document.body).position);
-  const afterTop = await page.evaluate(() => document.body.getBoundingClientRect().top);
-  check("Body pinned while open", bodyFixed === "fixed", bodyFixed);
+  const afterScroll = await page.evaluate(() => window.scrollY);
+  const rootLocked = await page.evaluate(
+    () => getComputedStyle(document.documentElement).overflow === "hidden"
+  );
+  check("Root scroll locked while open", rootLocked);
   check(
-    "No visual scroll jump on search",
-    Math.abs(afterTop - beforeTop) < 8,
-    `Δ=${afterTop - beforeTop}`
+    "No body scroll jump on search",
+    Math.abs(afterScroll - beforeScroll) < 8,
+    `Δ=${afterScroll - beforeScroll}`
   );
 
   // Results filtered
@@ -82,7 +131,9 @@ try {
   check("Search filters results", filtered > 0 && filtered < 30, `${filtered} resultados`);
 
   // Body overflow locked while open
-  check("Background scroll locked", bodyFixed === "fixed", bodyFixed);
+  // Body/root locked while open
+  const bodyOverflow = await page.evaluate(() => getComputedStyle(document.body).overflow);
+  check("Background scroll locked", bodyOverflow === "hidden", bodyOverflow);
 
   // Click create-new navigates to /recipes/new?from=almuerzo
   await page.evaluate(() => {
@@ -96,13 +147,7 @@ try {
 
   // Duplicate link from picker
   await page.goto(`${BASE}/planner`, { waitUntil: "networkidle0" });
-  await page.evaluate(() => {
-    const btn = [...document.querySelectorAll("button")].find((b) =>
-      b.textContent.trim().startsWith("+ Almuerzo")
-    );
-    btn.click();
-  });
-  await page.waitForSelector('[role="dialog"]', { timeout: 10000 });
+  await openPicker();
   await page.evaluate(() => {
     document.querySelector('[role="dialog"] button[title="Duplicar como variante"]').click();
   });
